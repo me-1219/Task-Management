@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+// FileSharing.tsx
+import { useState, useRef, useCallback } from "react";
 import { motion } from "motion/react";
 import {
   Upload,
@@ -15,7 +16,7 @@ import {
   Clock,
   Search,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
@@ -61,6 +62,7 @@ const fileColors = {
   other: "text-gray-600 bg-gray-50",
 };
 
+// Mock files to start
 const mockFiles: FileItem[] = [
   {
     id: "1",
@@ -101,71 +103,6 @@ const mockFiles: FileItem[] = [
     version: 5,
     downloads: 42,
   },
-  {
-    id: "4",
-    name: "Product Demo.mp4",
-    type: "video",
-    size: "156 MB",
-    uploadedBy: {
-      name: "David Kim",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    },
-    uploadedAt: "2026-03-26",
-    version: 1,
-    downloads: 67,
-  },
-  {
-    id: "5",
-    name: "Logo Assets.zip",
-    type: "other",
-    size: "12.3 MB",
-    uploadedBy: {
-      name: "Jessica Taylor",
-      avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=100&h=100&fit=crop",
-    },
-    uploadedAt: "2026-03-25",
-    version: 2,
-    downloads: 35,
-  },
-  {
-    id: "6",
-    name: "Meeting Notes.docx",
-    type: "doc",
-    size: "89 KB",
-    uploadedBy: {
-      name: "Alex Johnson",
-      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
-    },
-    uploadedAt: "2026-03-24",
-    version: 1,
-    downloads: 15,
-  },
-  {
-    id: "7",
-    name: "Team Photo.jpg",
-    type: "image",
-    size: "3.2 MB",
-    uploadedBy: {
-      name: "Lisa Wang",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-    },
-    uploadedAt: "2026-03-23",
-    version: 1,
-    downloads: 28,
-  },
-  {
-    id: "8",
-    name: "API Documentation.pdf",
-    type: "pdf",
-    size: "1.8 MB",
-    uploadedBy: {
-      name: "Michael Brown",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    },
-    uploadedAt: "2026-03-22",
-    version: 4,
-    downloads: 52,
-  },
 ];
 
 export function FileSharing() {
@@ -174,6 +111,8 @@ export function FileSharing() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const filteredFiles = files.filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -189,36 +128,47 @@ export function FileSharing() {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const getFileType = (name: string): FileItem["type"] => {
+    if (name.endsWith(".pdf")) return "pdf";
+    if (name.endsWith(".doc") || name.endsWith(".docx")) return "doc";
+    if (name.endsWith(".xls") || name.endsWith(".xlsx")) return "sheet";
+    if (name.match(/\.(jpg|jpeg|png|gif)$/)) return "image";
+    if (name.match(/\.(mp4|mov|avi)$/)) return "video";
+    return "other";
+  };
 
-    // Simulate file upload
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+    else return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
     setIsUploading(true);
     setUploadProgress(0);
 
+    // Simulate upload
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setIsUploading(false);
-          toast.success("File uploaded successfully!");
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
-  }, []);
-
-  const handleFileSelect = () => {
-    // Simulate file upload
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
+          const newFile: FileItem = {
+            id: Date.now().toString(),
+            name: selectedFile.name,
+            type: getFileType(selectedFile.name),
+            size: formatFileSize(selectedFile.size),
+            uploadedBy: {
+              name: "You",
+              avatar: "",
+            },
+            uploadedAt: new Date().toISOString(),
+            version: 1,
+            downloads: 0,
+          };
+          setFiles((prev) => [newFile, ...prev]);
           setIsUploading(false);
           toast.success("File uploaded successfully!");
           return 100;
@@ -227,6 +177,17 @@ export function FileSharing() {
       });
     }, 200);
   };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (!droppedFile) return;
+
+    const event = { target: { files: [droppedFile] } } as any;
+    handleFileUpload(event);
+  }, []);
 
   const handleDelete = (fileId: string) => {
     setFiles(files.filter((f) => f.id !== fileId));
@@ -274,9 +235,15 @@ export function FileSharing() {
           <p className="mt-1 text-sm text-muted-foreground">
             Drag and drop or click to browse
           </p>
-          <Button className="mt-4" onClick={handleFileSelect}>
+          <Button className="mt-4" onClick={() => fileInputRef.current?.click()}>
             Browse Files
           </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileUpload}
+          />
 
           {isUploading && (
             <div className="mt-6 w-full max-w-md space-y-2">
@@ -290,7 +257,7 @@ export function FileSharing() {
         </CardContent>
       </Card>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -300,17 +267,6 @@ export function FileSharing() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
-        <div className="flex gap-2">
-          <Badge variant="secondary" className="cursor-pointer hover:bg-muted transition-colors">
-            All Files ({files.length})
-          </Badge>
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted transition-colors">
-            Images (1)
-          </Badge>
-          <Badge variant="outline" className="cursor-pointer hover:bg-muted transition-colors">
-            Documents (4)
-          </Badge>
         </div>
       </div>
 
@@ -330,7 +286,7 @@ export function FileSharing() {
               <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-4">
                   <div className="space-y-3">
-                    {/* File Icon and Actions */}
+                    {/* File Icon & Actions */}
                     <div className="flex items-start justify-between">
                       <div className={`rounded-lg p-3 ${colorClass} dark:bg-opacity-20`}>
                         <Icon className="h-6 w-6" />
@@ -371,13 +327,11 @@ export function FileSharing() {
 
                     {/* File Info */}
                     <div>
-                      <h3 className="font-medium text-foreground line-clamp-1">
-                        {file.name}
-                      </h3>
+                      <h3 className="font-medium text-foreground line-clamp-1">{file.name}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">{file.size}</p>
                     </div>
 
-                    {/* Version Badge */}
+                    {/* Version */}
                     {file.version > 1 && (
                       <Badge variant="secondary" className="text-xs">
                         <Clock className="mr-1 h-3 w-3" />
@@ -391,10 +345,7 @@ export function FileSharing() {
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={file.uploadedBy.avatar} />
                           <AvatarFallback>
-                            {file.uploadedBy.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {file.uploadedBy.name.split(" ").map((n) => n[0]).join("")}
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-xs text-muted-foreground">
