@@ -124,6 +124,7 @@ export function Root() {
   };
 
   const handleLogout = () => {
+    /* navigate("/login");*/
     toast.success("Logged out successfully!");
   };
 
