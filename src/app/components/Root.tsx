@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { toast } from "sonner";
+import myAvatar from "../assets/mebu.jpg";
 
 const navigation = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -190,12 +191,12 @@ export function Root() {
               <DropdownMenuTrigger asChild>
                 <button className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-muted">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src={myAvatar} />
+                    <AvatarFallback>ME</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-foreground">John Doe</p>
-                    <p className="text-xs text-muted-foreground">john@example.com</p>
+                    <p className="text-sm font-medium text-foreground">Mebit Melak</p>
+                    <p className="text-xs text-muted-foreground">melakmebit75@gmail.com</p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
